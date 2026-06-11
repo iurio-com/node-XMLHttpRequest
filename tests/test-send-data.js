@@ -21,11 +21,12 @@ var server = http.createServer(function (req, res) {
 // Test wrong method
 xhr = new XMLHttpRequest();
 
-var tests = ['WRONG_METHOD','SEND_TEXT','SEND_BUFFER','SEND_TYPEDARRAY','SEND_BLOB','SEND_FILE'];
+var tests = ['WRONG_METHOD','SEND_TEXT','SEND_BUFFER','SEND_TYPEDARRAY','SEND_BLOB','SEND_FORMDATA','SEND_FILE'];
 var currentTest = 0;
 
 xhr.onreadystatechange = function() {
   if (this.readyState == 4) {
+    console.log('Testing', tests[currentTest]);
     switch (tests[currentTest]) {
       case 'WRONG_METHOD':
         assert.equal(this.status, 405);
@@ -65,6 +66,19 @@ xhr.onreadystatechange = function() {
       case 'SEND_BLOB':
         assert.equal(this.status, 200);
         assert.equal(this.responseText, "Hello World");
+
+        ++currentTest;
+        xhr.open("POST", url);
+        var fd = new FormData();
+        fd.set('v1', 'Hello');
+        fd.append('v1', 'World');
+        fd.set('v2', 'Test');
+        xhr.send(fd);
+        return;
+
+      case 'SEND_FORMDATA':
+        assert.equal(this.status, 200);
+        assert.match(this.responseText, /^--(.*)\r\nContent-Disposition: form-data; name="v1"\r\n\r\nHello\r\n--\1\r\nContent-Disposition: form-data; name="v1"\r\n\r\nWorld\r\n--\1\r\nContent-Disposition: form-data; name="v2"\r\n\r\nTest\r\n--\1--\r\n$/m);
 
         ++currentTest;
         xhr.open("POST", url);
